@@ -1,9 +1,8 @@
 package com.dwagner.filepicker.ui
 
-import android.util.Log
 import android.view.View
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
-import com.dwagner.filepicker.AppConstants
 import com.dwagner.filepicker.databinding.FileItemBinding
 import com.dwagner.filepicker.io.AndroidFile
 
@@ -13,9 +12,12 @@ class FileItemViewHolder(
 ) : RecyclerView.ViewHolder(binding.root) {
 
     fun bind(file: AndroidFile) {
-
         binding.apply {
-            root.setOnClickListener { onRowClick(file) }
+            root.setOnClickListener {
+                check.visibility = if (check.isVisible) View.INVISIBLE else View.VISIBLE
+                onRowClick(file)
+            }
+
             thumbnail.setImageBitmap(file.thumbnail)
 
             if (file is AndroidFile.Video) {
@@ -23,8 +25,5 @@ class FileItemViewHolder(
                 duration.text = file.durationString
             }
         }
-
-
-
     }
 }
