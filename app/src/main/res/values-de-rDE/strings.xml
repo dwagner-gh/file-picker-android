@@ -3,4 +3,5 @@
     <string name="app_name">File Picker</string>
     <string name="menu_about">Über</string>
     <string name="oops">Entschuldigung, etwas ist schief gelaufen.</string>
+    <string name="need_permission">Bitte erteilen Sie die Berechtigung zum Lesen von externen Dateien.</string>
 </resources>
