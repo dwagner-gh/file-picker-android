@@ -3,4 +3,9 @@
     <string name="menu_about">About</string>
     <string name="oops">Sorry, something went wrong.</string>
     <string name="need_permission">Please grant the permission to access external files.</string>
+    <string name="video_duration">%dh:%dm:%ds</string>
+    <string name="menu_filter">Filter</string>
+    <string name="menu_filter_all">All</string>
+    <string name="menu_filter_photo">Photos</string>
+    <string name="menu_filter_video">Videos</string>
 </resources>

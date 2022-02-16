@@ -4,4 +4,9 @@
     <string name="menu_about">Über</string>
     <string name="oops">Entschuldigung, etwas ist schief gelaufen.</string>
     <string name="need_permission">Bitte erteilen Sie die Berechtigung zum Lesen von externen Dateien.</string>
+    <string name="video_duration">%dh:%dm:%ds</string>
+    <string name="menu_filter">Filtern</string>
+    <string name="menu_filter_all">Alle</string>
+    <string name="menu_filter_photo">Fotos</string>
+    <string name="menu_filter_video">Videos</string>
 </resources>

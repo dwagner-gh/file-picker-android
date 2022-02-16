@@ -1,6 +1,7 @@
 package com.dwagner.filepicker.ui
 
 import android.util.Log
+import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import com.dwagner.filepicker.AppConstants
 import com.dwagner.filepicker.databinding.FileItemBinding
@@ -13,18 +14,17 @@ class FileItemViewHolder(
 
     fun bind(file: AndroidFile) {
 
-        when (file) {
-            is AndroidFile.Image -> {
-                binding.apply {
-                    root.setOnClickListener { onRowClick(file) }
-                    Log.d(AppConstants.LOGGING_TAG, "is thumbnail null? ${file.thumbnail}")
-                    thumbnail.setImageBitmap(file.thumbnail)
-                }
-            }
-            is AndroidFile.Video -> {
+        binding.apply {
+            root.setOnClickListener { onRowClick(file) }
+            thumbnail.setImageBitmap(file.thumbnail)
 
+            if (file is AndroidFile.Video) {
+                duration.visibility = View.VISIBLE
+                duration.text = file.durationString
             }
         }
+
+
 
     }
 }

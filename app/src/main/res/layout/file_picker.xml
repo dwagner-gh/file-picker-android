@@ -17,7 +17,6 @@
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="parent" />
 
-<!-- TODO implement spanCount as resource-->
   <androidx.recyclerview.widget.RecyclerView
       android:id="@+id/items"
       app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"

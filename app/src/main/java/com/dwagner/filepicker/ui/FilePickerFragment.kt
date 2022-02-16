@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import com.dwagner.filepicker.AppConstants
+import com.dwagner.filepicker.FilterMode
 import com.dwagner.filepicker.R
 import com.dwagner.filepicker.databinding.FilePickerBinding
 import kotlinx.coroutines.flow.collect
@@ -86,14 +87,30 @@ class FilePickerFragment : Fragment() {
                 Log.d(AppConstants.LOGGING_TAG, "Media Store images collected")
             }
         }
-        fpViewModel.getFiles()
+        fpViewModel.getFiles(FilterMode.ALL)
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.actions_picker, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.all -> {
+            fpViewModel.getFiles(FilterMode.ALL)
+            item.isChecked = true
+            true
+        }
+        R.id.photo -> {
+            fpViewModel.getFiles(FilterMode.PHOTO)
+            item.isChecked = true
+            true
+        }
+        R.id.video -> {
+            fpViewModel.getFiles(FilterMode.VIDEO)
+            item.isChecked = true
+            true
+        }
         else -> super.onOptionsItemSelected(item)
     }
 

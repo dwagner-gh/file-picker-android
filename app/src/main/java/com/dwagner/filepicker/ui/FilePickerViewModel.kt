@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ContentResolver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dwagner.filepicker.FilterMode
 import com.dwagner.filepicker.io.AndroidFile
 import com.dwagner.filepicker.io.FileRepository
 import kotlinx.coroutines.Job
@@ -27,9 +28,9 @@ class FilePickerViewModel(private val fpRepository: FileRepository, private val 
         }
     }
 
-    fun getFiles() {
+    fun getFiles(filterMode: FilterMode) {
         viewModelScope.launch {
-            fpRepository.getFiles(context)
+            fpRepository.getFiles(context, filterMode)
         }
     }
 }
