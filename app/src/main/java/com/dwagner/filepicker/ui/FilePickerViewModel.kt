@@ -13,7 +13,6 @@ import kotlinx.coroutines.launch
 sealed class FPViewState {
     abstract val files : List<AndroidFile>
 
-    data class FilesSelected(override val files: List<AndroidFile>) : FPViewState() {}
     data class FilesLoaded(override val files: List<AndroidFile>) : FPViewState() {}
 }
 
@@ -23,14 +22,15 @@ class FilePickerViewModel(
 ) : ViewModel() {
 
     private var _states : MutableStateFlow<FPViewState> = MutableStateFlow(FPViewState.FilesLoaded(listOf()))
-    private var _selectedFiles : MutableList<AndroidFile> = mutableListOf()
+    private val _selectedFiles : MutableList<AndroidFile> = mutableListOf()
+    private var lastState : List<AndroidFile> = listOf()
     val states = _states.asStateFlow()
 
     init {
         // forwarding new states of repository to view model list
         viewModelScope.launch {
             fpRepository.resultURIs.collect { files: List<AndroidFile> ->
-                _selectedFiles = files.filter { _selectedFiles.contains(it) }.toMutableList()
+                lastState = files
                 _states.emit(FPViewState.FilesLoaded(files))
             }
         }
@@ -47,21 +47,21 @@ class FilePickerViewModel(
         // because it's the same list object
         if (isChecked) {
             _selectedFiles.add(file)
-            viewModelScope.launch { _states.emit(FPViewState.FilesSelected(_selectedFiles.toList())) }
         }
         else {
             _selectedFiles.remove(file)
-            viewModelScope.launch { _states.emit(FPViewState.FilesSelected(_selectedFiles.toList())) }
         }
 
     }
     
     fun deselectAll() {
-        _selectedFiles = mutableListOf()
-        viewModelScope.launch { _states.emit(FPViewState.FilesSelected(_selectedFiles.toList())) }
+        _selectedFiles.removeAll{ true }
     }
     
     fun getSelectedFiles(): List<AndroidFile> {
         return _selectedFiles
     }
+
+    // retain last loaded files, so view can access data after configuration change
+    fun lastLoadedFiles(): List<AndroidFile> = lastState
 }

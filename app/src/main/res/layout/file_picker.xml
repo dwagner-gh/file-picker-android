@@ -19,7 +19,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHeight_percent="0.2">
+        app:layout_constraintVertical_weight="1">
 
         <ImageView
             android:id="@+id/deselect_all"
@@ -41,6 +41,16 @@
             app:layout_constraintBottom_toBottomOf="@id/deselect_all"
             app:layout_constraintStart_toEndOf="@id/deselect_all"
             app:layout_constraintTop_toTopOf="@id/deselect_all" />
+
+        <ImageView
+            android:id="@+id/accept_choice"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:src="@drawable/ic_check"
+            app:layout_constraintBottom_toTopOf="@id/selected_items"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="?colorAccent" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/selected_items"
@@ -64,6 +74,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/selected_view"
+        app:layout_constraintVertical_weight="@integer/vertical_weight_fp"
         app:spanCount="@integer/number_of_columns" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <integer name="number_of_columns">2</integer>
+    <integer name="vertical_weight_fp">5</integer>
 </resources>

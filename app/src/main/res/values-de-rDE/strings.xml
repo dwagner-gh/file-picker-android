@@ -10,4 +10,5 @@
     <string name="menu_filter_photo">Fotos</string>
     <string name="menu_filter_video">Videos</string>
     <string name="selected_text">%d ausgewählt</string>
+    <string name="chosen_uris">Ausgewählte URIs</string>
 </resources>
