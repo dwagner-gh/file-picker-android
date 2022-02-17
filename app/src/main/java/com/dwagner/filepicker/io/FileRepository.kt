@@ -34,7 +34,11 @@ class FileRepository {
 
     private fun getImageFiles(context: Context): List<AndroidFile> {
         val mediaImageFiles = mutableListOf<AndroidFile>()
-        val columns = arrayOf(MediaStore.Images.Media._ID)
+        val columns = arrayOf(
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.ImageColumns.WIDTH,
+            MediaStore.Images.ImageColumns.HEIGHT
+        )
         val orderBy = MediaStore.Images.Media.DATE_TAKEN
 
         context.contentResolver.query(
@@ -54,10 +58,17 @@ class FileRepository {
                     id
                 )
 
+                val width =
+                    cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns.WIDTH))
+                val height =
+                    cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns.HEIGHT))
+
                 mediaImageFiles.add(
                     AndroidFile.Image(
                         fileURI = imageContentUri,
                         imageID = id,
+                        width = width,
+                        height = height,
                         context = context
                     )
                 )
@@ -70,7 +81,12 @@ class FileRepository {
 
     private fun getVideoFiles(context: Context): List<AndroidFile> {
         val mediaVideoFiles = mutableListOf<AndroidFile>()
-        val columns = arrayOf(MediaStore.Video.Media._ID, MediaStore.Video.VideoColumns.DURATION)
+        val columns = arrayOf(
+            MediaStore.Video.Media._ID,
+            MediaStore.Video.VideoColumns.DURATION,
+            MediaStore.Video.VideoColumns.WIDTH,
+            MediaStore.Video.VideoColumns.HEIGHT
+        )
         val orderBy = MediaStore.Images.Media.DATE_TAKEN
 
         context.contentResolver.query(
@@ -92,12 +108,18 @@ class FileRepository {
 
                 val timeInMs =
                     cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.VideoColumns.DURATION))
+                val width =
+                    cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Video.VideoColumns.WIDTH))
+                val height =
+                    cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Video.VideoColumns.HEIGHT))
 
                 mediaVideoFiles.add(
                     AndroidFile.Video(
                         fileURI = videoContentURI,
                         videoID = id,
                         durationMillis = timeInMs,
+                        width = width,
+                        height = height,
                         context = context
                     )
                 )

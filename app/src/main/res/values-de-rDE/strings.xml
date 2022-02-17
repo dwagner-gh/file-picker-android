@@ -9,4 +9,5 @@
     <string name="menu_filter_all">Alle</string>
     <string name="menu_filter_photo">Fotos</string>
     <string name="menu_filter_video">Videos</string>
+    <string name="selected_text">%d ausgewählt</string>
 </resources>

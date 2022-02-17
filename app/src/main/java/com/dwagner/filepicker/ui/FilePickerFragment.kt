@@ -12,18 +12,22 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.dwagner.filepicker.AppConstants
 import com.dwagner.filepicker.FilterMode
 import com.dwagner.filepicker.R
 import com.dwagner.filepicker.databinding.FilePickerBinding
+import com.dwagner.filepicker.io.AndroidFile
+import com.dwagner.filepicker.ui.selected.SelectedItemAdapter
 import kotlinx.coroutines.flow.collect
 import org.koin.androidx.viewmodel.ext.android.viewModel
+
 
 class FilePickerFragment : Fragment() {
 
     private var binding: FilePickerBinding? = null
     private val fpViewModel: FilePickerViewModel by viewModel()
+    private val clickedItems = mutableListOf<AndroidFile>()
 
     // Register the permissions callback, which handles the user's response to the
     // system permissions dialog. Save the return value, an instance of
@@ -36,7 +40,8 @@ class FilePickerFragment : Fragment() {
                 permissionGranted()
             } else {
                 // permission not granted
-                Toast.makeText(requireActivity(), R.string.need_permission, Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireActivity(), R.string.need_permission, Toast.LENGTH_SHORT)
+                    .show()
             }
         }
 
@@ -55,9 +60,10 @@ class FilePickerFragment : Fragment() {
         .root
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val readStoragePermission= ContextCompat.checkSelfPermission(
+        val readStoragePermission = ContextCompat.checkSelfPermission(
             requireContext(),
-            Manifest.permission.READ_EXTERNAL_STORAGE)
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        )
 
         when (readStoragePermission) {
             PackageManager.PERMISSION_GRANTED -> {
@@ -71,22 +77,60 @@ class FilePickerFragment : Fragment() {
     }
 
     private fun permissionGranted() {
-        val fileItemAdapter = FileItemAdapter(
-            layoutInflater,
-            onRowClicked = { /** TODO create click handling **/ })
-
-        // setting up RecyclerView
-        binding?.items?.apply {
-            this.adapter = fileItemAdapter
+        val fileItemAdapter = FileItemAdapter(layoutInflater) { file, isChecked ->
+            // isChecked represents the current checked status of the file
+            // it need to be inverted and passed to the view model
+            fpViewModel.setFileChecked(file, !isChecked)
         }
 
-        // setting up collection of new files
+        val selectedAdapter =
+            SelectedItemAdapter(layoutInflater) { file: AndroidFile ->
+                // all items in this adapter are selected, when clicked they should be removed
+                fpViewModel.setFileChecked(file, false)
+            }
+
+        // setting up RecyclerViews
+        binding?.items?.adapter = fileItemAdapter
+
+        val selectedItemsList = binding?.selectedItems
+        selectedItemsList?.adapter = selectedAdapter
+        val layoutManager =
+            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        selectedItemsList?.layoutManager = layoutManager
+
+
+        // setting up collection of new files and new selections
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             fpViewModel.states.collect { state ->
-                fileItemAdapter.submitList(state)
-                Log.d(AppConstants.LOGGING_TAG, "Media Store images collected")
+                when (state) {
+                    is FPViewState.FilesLoaded -> {
+                        // if only files are loaded, select nothing
+                        fileItemAdapter.submitList(state.files.map { it to false })
+                    }
+                    is FPViewState.FilesSelected -> {
+                        // map current list of adapter for all files to new selected items
+                        val mapped = fileItemAdapter.currentList
+                            .map { it.first to state.files.contains(it.first) }
+                        fileItemAdapter.submitList(mapped)
+                        // this adapter only shows selected items, so list can be used directly
+                        selectedAdapter.submitList(state.files)
+                        if (state.files.isEmpty()) {
+                            selectedItemsList?.visibility = View.GONE
+                            binding?.selectedView?.visibility = View.GONE
+                        }
+                        else {
+                            selectedItemsList?.visibility = View.VISIBLE
+                            binding?.selectedView?.visibility = View.VISIBLE
+                            binding?.selectedText?.text =
+                                String.format(getString(R.string.selected_text), state.files.size)
+
+                        }
+                    }
+                }
+
             }
         }
+        binding?.deselectAll?.setOnClickListener { fpViewModel.deselectAll() }
         fpViewModel.getFiles(FilterMode.ALL)
     }
 
@@ -127,5 +171,4 @@ class FilePickerFragment : Fragment() {
             Toast.makeText(requireActivity(), R.string.oops, Toast.LENGTH_LONG).show()
         }
     }
-
 }
