@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.dwagner.filepicker.FilterMode
 import com.dwagner.filepicker.io.AndroidFile
 import com.dwagner.filepicker.io.FileRepository
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -24,6 +23,8 @@ class FilePickerViewModel(
     private var _states : MutableStateFlow<FPViewState> = MutableStateFlow(FPViewState.FilesLoaded(listOf()))
     private val _selectedFiles : MutableList<AndroidFile> = mutableListOf()
     private var lastState : List<AndroidFile> = listOf()
+    var lastFilterMode : FilterMode = FilterMode.ALL
+        private set
     val states = _states.asStateFlow()
 
     init {
@@ -39,13 +40,14 @@ class FilePickerViewModel(
     fun getFiles(filterMode: FilterMode) {
         viewModelScope.launch {
             fpRepository.getFiles(context, filterMode)
+            lastFilterMode = filterMode
         }
     }
 
-    fun setFileChecked(file: AndroidFile, isChecked: Boolean) {
+    fun setFileSelected(file: AndroidFile, isSelected: Boolean) {
         // toList() called in order to create a new list, otherwise collection isn't triggered
         // because it's the same list object
-        if (isChecked) {
+        if (isSelected) {
             _selectedFiles.add(file)
         }
         else {

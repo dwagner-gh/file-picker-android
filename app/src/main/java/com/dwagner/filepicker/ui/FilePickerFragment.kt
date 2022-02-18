@@ -2,7 +2,6 @@ package com.dwagner.filepicker.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
@@ -20,7 +19,7 @@ import kotlinx.coroutines.flow.collect
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 
-class FilePickerFragment : Fragment() {
+class FilePickerFragment : Fragment(), SelectionHandler {
 
     private var binding: FilePickerBinding? = null
     private val fpViewModel: FilePickerViewModel by viewModel()
@@ -75,19 +74,9 @@ class FilePickerFragment : Fragment() {
     }
 
     private fun permissionGranted() {
-        fileItemAdapter = FileItemAdapter(layoutInflater) { file, isChecked ->
-            // isChecked represents the current checked status of the file
-            // it need to be inverted and passed to the view model
-            fpViewModel.setFileChecked(file, !isChecked)
-            onSelectionChanged()
-        }
+        fileItemAdapter = FileItemAdapter(layoutInflater, this)
 
-        selectedAdapter =
-            SelectedItemAdapter(layoutInflater) { file: AndroidFile ->
-                // all items in this adapter are selected, when clicked they should be removed
-                fpViewModel.setFileChecked(file, false)
-                onSelectionChanged()
-            }
+        selectedAdapter = SelectedItemAdapter(layoutInflater, this)
 
         if (fpViewModel.lastLoadedFiles().isNotEmpty()) {
             // load data of view model if data is present
@@ -95,14 +84,12 @@ class FilePickerFragment : Fragment() {
         }
 
         else {
-            // get all files
+            // get all files, because no files are loaded from previous runs
             fpViewModel.getFiles(FilterMode.ALL)
         }
 
-        // TODO: maybe call onSelection() automatically
-        // need to add copy of list to adapter, otherwise inconsistency error might occur
-        selectedAdapter.submitList(fpViewModel.getSelectedFiles().toList())
-        onSelectionChanged()
+        // update selection ui to represent selected items of view model
+        this.updateSelectionUI()
 
         // setting up RecyclerViews
         binding?.items?.adapter = fileItemAdapter
@@ -124,21 +111,23 @@ class FilePickerFragment : Fragment() {
             }
         }
 
-        binding?.deselectAll?.setOnClickListener {
-            fpViewModel.deselectAll();
-            onSelectionChanged()
-        }
+        binding?.deselectAll?.setOnClickListener { this.deselectAll() }
         binding?.acceptChoice?.setOnClickListener {
             // show URIs of all selected files in a dialog
             val fileURIs =
                 fpViewModel.getSelectedFiles().map { it.fileURI.toString() }.toTypedArray()
             ShowURIsDialogFragment(fileURIs).show(childFragmentManager, ShowURIsDialogFragment.TAG)
-            fpViewModel.deselectAll()
+            this.deselectAll()
         }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.actions_picker, menu)
+        when (fpViewModel.lastFilterMode) {
+            FilterMode.ALL -> menu.findItem(R.id.all).isChecked = true
+            FilterMode.VIDEO -> menu.findItem(R.id.video).isChecked = true
+            FilterMode.PHOTO -> menu.findItem(R.id.photo).isChecked = true
+        }
         super.onCreateOptionsMenu(menu, inflater)
     }
 
@@ -166,13 +155,25 @@ class FilePickerFragment : Fragment() {
         super.onDestroyView()
     }
 
-    private fun onSelectionChanged() {
+    override fun onSelection(file: AndroidFile, isSelected: Boolean) {
+        fpViewModel.setFileSelected(file, isSelected)
+        updateSelectionUI()
+    }
 
+    private fun deselectAll() {
+        fpViewModel.deselectAll()
+        updateSelectionUI()
+    }
+
+    private fun updateSelectionUI() {
         if (fpViewModel.getSelectedFiles().isEmpty()) {
+            // handle updating if no files selected
             binding?.selectedView?.visibility = View.GONE
             selectedAdapter.submitList(listOf())
             fileItemAdapter.submitList(fpViewModel.lastLoadedFiles().map { it to false })
+
         } else {
+            // handling updating if files are selected
             selectedAdapter.submitList(fpViewModel.getSelectedFiles().toList())
             fileItemAdapter.submitList(
                 fpViewModel.lastLoadedFiles()
@@ -182,7 +183,5 @@ class FilePickerFragment : Fragment() {
             binding?.selectedText?.text =
                 String.format(getString(R.string.selected_text), fpViewModel.getSelectedFiles().size)
         }
-
-
     }
 }

@@ -9,11 +9,11 @@ import com.dwagner.filepicker.io.AndroidFile
 
 class FileItemAdapter(
     private val inflater: LayoutInflater,
-    private val onRowClicked: RowClickHandler
+    private val selectionHandler: SelectionHandler
 ) : ListAdapter<Pair<AndroidFile, Boolean>, FileItemViewHolder>(DiffCallbackAllFiles) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FileItemViewHolder =
-        FileItemViewHolder(FileItemBinding.inflate(inflater, parent, false), onRowClicked)
+        FileItemViewHolder(FileItemBinding.inflate(inflater, parent, false), selectionHandler)
 
     override fun onBindViewHolder(holder: FileItemViewHolder, position: Int) {
         holder.bind(getItem(position))
