@@ -1,6 +1,7 @@
 package com.dwagner.filepicker.ui
 
 import android.os.Bundle
+import android.text.Layout
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -43,7 +44,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
         R.id.about_item -> {
-            Toast.makeText(this, "Not implemented yet", Toast.LENGTH_SHORT).show()
+            findNavController(R.id.nav_host).navigate(R.id.globalShowAbout)
             true
         }
         else -> super.onOptionsItemSelected(item)

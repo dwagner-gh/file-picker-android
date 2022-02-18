@@ -10,4 +10,6 @@
     <string name="menu_filter_video">Videos</string>
     <string name="selected_text">%d selected</string>
     <string name="chosen_uris">Chosen URIs</string>
+    <string name="about_html">about.html</string>
+    <string name="about_title">About This App</string>
 </resources>

@@ -11,4 +11,6 @@
     <string name="menu_filter_video">Videos</string>
     <string name="selected_text">%d ausgewählt</string>
     <string name="chosen_uris">Ausgewählte URIs</string>
+    <string name="about_html">about-de.html</string>
+    <string name="about_title">Über Diese App</string>
 </resources>
