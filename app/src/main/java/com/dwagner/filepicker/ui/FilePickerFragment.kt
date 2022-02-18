@@ -8,18 +8,17 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.dwagner.filepicker.FilterMode
 import com.dwagner.filepicker.R
 import com.dwagner.filepicker.databinding.FilePickerBinding
 import com.dwagner.filepicker.io.AndroidFile
 import com.dwagner.filepicker.ui.selected.SelectedItemAdapter
-import kotlinx.coroutines.flow.collect
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 
-class FilePickerFragment : Fragment(), SelectionHandler {
+class FilePickerFragment : Fragment(), SelectionHandler, DataLoadedObserver {
 
     private var binding: FilePickerBinding? = null
     private val fpViewModel: FilePickerViewModel by viewModel()
@@ -74,9 +73,9 @@ class FilePickerFragment : Fragment(), SelectionHandler {
     }
 
     private fun permissionGranted() {
-        fileItemAdapter = FileItemAdapter(layoutInflater, this)
+        fileItemAdapter = FileItemAdapter(layoutInflater, fpViewModel, this)
 
-        selectedAdapter = SelectedItemAdapter(layoutInflater, this)
+        selectedAdapter = SelectedItemAdapter(layoutInflater, fpViewModel, this)
 
         if (fpViewModel.lastLoadedFiles().isNotEmpty()) {
             // load data of view model if data is present
@@ -89,7 +88,7 @@ class FilePickerFragment : Fragment(), SelectionHandler {
         }
 
         // update selection ui to represent selected items of view model
-        this.updateSelectionUI()
+        this.updateUI()
 
         // setting up RecyclerViews
         binding?.items?.adapter = fileItemAdapter
@@ -98,18 +97,7 @@ class FilePickerFragment : Fragment(), SelectionHandler {
             LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         binding?.selectedItems?.layoutManager = layoutManager
 
-        // setting up collection of new files and new selections
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-            fpViewModel.states.collect { state ->
-                when (state) {
-                    is FPViewState.FilesLoaded -> {
-                        // if only files are loaded, select nothing
-                        fileItemAdapter.submitList(state.files.map { it to fpViewModel.getSelectedFiles().contains(it) })
-                    }
-                }
-
-            }
-        }
+        fpViewModel.observeLoadedData(this)
 
         binding?.deselectAll?.setOnClickListener { this.deselectAll() }
         binding?.acceptChoice?.setOnClickListener {
@@ -152,29 +140,33 @@ class FilePickerFragment : Fragment(), SelectionHandler {
 
     override fun onDestroyView() {
         binding = null
+        fpViewModel.stopObserving(this)
         super.onDestroyView()
+    }
+
+    override fun onDataLoaded() {
+        updateUI()
     }
 
     override fun onSelection(file: AndroidFile, isSelected: Boolean) {
         fpViewModel.setFileSelected(file, isSelected)
-        updateSelectionUI()
+        updateUI()
     }
 
     private fun deselectAll() {
         fpViewModel.deselectAll()
-        updateSelectionUI()
+        updateUI()
     }
 
-    private fun updateSelectionUI() {
+    private fun updateUI() {
+        selectedAdapter.submitList(fpViewModel.getSelectedFiles().toList())
         if (fpViewModel.getSelectedFiles().isEmpty()) {
             // handle updating if no files selected
             binding?.selectedView?.visibility = View.GONE
-            selectedAdapter.submitList(listOf())
             fileItemAdapter.submitList(fpViewModel.lastLoadedFiles().map { it to false })
 
         } else {
             // handling updating if files are selected
-            selectedAdapter.submitList(fpViewModel.getSelectedFiles().toList())
             fileItemAdapter.submitList(
                 fpViewModel.lastLoadedFiles()
                     .map { it to fpViewModel.getSelectedFiles().contains(it)})

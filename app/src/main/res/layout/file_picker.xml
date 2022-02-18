@@ -30,7 +30,8 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@id/selected_text"
             app:layout_constraintTop_toTopOf="parent"
-            android:layout_margin="8dp"/>
+            android:layout_margin="8dp"
+            app:layout_constraintVertical_weight="1"/>
 
         <TextView
             android:id="@+id/selected_text"
@@ -40,7 +41,8 @@
             android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="@id/deselect_all"
             app:layout_constraintStart_toEndOf="@id/deselect_all"
-            app:layout_constraintTop_toTopOf="@id/deselect_all" />
+            app:layout_constraintTop_toTopOf="@id/deselect_all"
+            app:layout_constraintVertical_weight="1"/>
 
         <ImageView
             android:id="@+id/accept_choice"
@@ -50,7 +52,8 @@
             app:layout_constraintBottom_toTopOf="@id/selected_items"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="?colorAccent" />
+            app:tint="?colorSecondary"
+            app:layout_constraintVertical_weight="1"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/selected_items"

@@ -1,14 +1,18 @@
 package com.dwagner.filepicker.ui.selected
 
 import android.view.View
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.dwagner.filepicker.databinding.SelectedItemBinding
 import com.dwagner.filepicker.io.AndroidFile
 import com.dwagner.filepicker.ui.SelectionHandler
+import kotlinx.coroutines.launch
 
 class SelectedItemViewHolder(
     private val binding: SelectedItemBinding,
-    private val selectionHandler: SelectionHandler
+    private val viewModel: ViewModel,
+    private val selectionHandler: SelectionHandler,
 ) : RecyclerView.ViewHolder(binding.root) {
 
     fun bind(file: AndroidFile) {
@@ -16,7 +20,11 @@ class SelectedItemViewHolder(
             root.setOnClickListener {
                 selectionHandler.onSelection(file, false)
             }
-            thumbnailSelected.setImageBitmap(file.thumbnail)
+
+
+            viewModel.viewModelScope.launch {
+                thumbnailSelected.setImageBitmap(file.loadThumbnail())
+            }
 
             if (file is AndroidFile.Video) {
                 durationSelected.visibility = View.VISIBLE

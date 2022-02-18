@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.dwagner.filepicker.FilterMode
 import com.dwagner.filepicker.io.AndroidFile
 import com.dwagner.filepicker.io.FileRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -23,6 +24,7 @@ class FilePickerViewModel(
     private var _states : MutableStateFlow<FPViewState> = MutableStateFlow(FPViewState.FilesLoaded(listOf()))
     private val _selectedFiles : MutableList<AndroidFile> = mutableListOf()
     private var lastState : List<AndroidFile> = listOf()
+    private var observers : MutableList<DataLoadedObserver> = mutableListOf()
     var lastFilterMode : FilterMode = FilterMode.ALL
         private set
     val states = _states.asStateFlow()
@@ -32,7 +34,11 @@ class FilePickerViewModel(
         viewModelScope.launch {
             fpRepository.resultURIs.collect { files: List<AndroidFile> ->
                 lastState = files
-                _states.emit(FPViewState.FilesLoaded(files))
+
+                // notify observers (usually fragments) that data was loaded
+                for (observer in observers) {
+                    observer.onDataLoaded()
+                }
             }
         }
     }
@@ -66,4 +72,16 @@ class FilePickerViewModel(
 
     // retain last loaded files, so view can access data after configuration change
     fun lastLoadedFiles(): List<AndroidFile> = lastState
+
+    fun observeLoadedData(observer: DataLoadedObserver) {
+        observers.add(observer)
+    }
+
+    fun stopObserving(observer: DataLoadedObserver) {
+        observers.remove(observer)
+    }
+}
+
+interface DataLoadedObserver {
+    fun onDataLoaded() : Unit
 }

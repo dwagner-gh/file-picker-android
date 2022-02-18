@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
 import android.util.Size
 import com.dwagner.filepicker.R
@@ -15,7 +16,8 @@ import java.util.concurrent.TimeUnit
  */
 sealed class AndroidFile {
     abstract val fileURI: Uri
-    abstract val thumbnail: Bitmap
+
+    abstract suspend fun loadThumbnail() : Bitmap
 
     override fun equals(other: Any?): Boolean {
         if (other is AndroidFile) {
@@ -44,25 +46,31 @@ sealed class AndroidFile {
         AndroidFile() {
 
         private val thumbnailSize = Size(480, 480)
+        var thumbnail: Bitmap? = null
+            private set
 
-        override val thumbnail: Bitmap
-            get() =
-                cropToSquare(
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                        context.contentResolver.loadThumbnail(fileURI, thumbnailSize, null)
-                    } else {
-                        // explicitly using deprecated way of generating thumbnails to support API
-                        // levels lower than 29.
-                        val bitmapOptions = BitmapFactory.Options()
-                        bitmapOptions.inSampleSize = 1
-                        MediaStore.Images.Thumbnails.getThumbnail(
-                            context.contentResolver,
-                            imageID,
-                            MediaStore.Images.Thumbnails.MINI_KIND,
-                            bitmapOptions
-                        )
-                    }
-                )
+        override suspend fun loadThumbnail() : Bitmap {
+            val result = thumbnail ?:
+            cropToSquare(
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    context.contentResolver.loadThumbnail(fileURI, thumbnailSize, null)
+                } else {
+                    // explicitly using deprecated way of generating thumbnails to support API
+                    // levels lower than 29.
+                    val bitmapOptions = BitmapFactory.Options()
+                    bitmapOptions.inSampleSize = 1
+                    MediaStore.Images.Thumbnails.getThumbnail(
+                        context.contentResolver,
+                        imageID,
+                        MediaStore.Images.Thumbnails.MINI_KIND,
+                        bitmapOptions
+                    )
+                }
+            )
+            thumbnail = result
+            return result
+        }
+
     }
 
     /**
@@ -80,6 +88,8 @@ sealed class AndroidFile {
     ) : AndroidFile() {
 
         private val thumbnailSize = Size(480, 480)
+        var thumbnail: Bitmap? = null
+            private set
 
         val durationString: String
             get() {
@@ -98,10 +108,10 @@ sealed class AndroidFile {
                 )
             }
 
-        override val thumbnail: Bitmap
-            get() =
-                cropToSquare(
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        override suspend fun loadThumbnail() : Bitmap {
+            val result = thumbnail
+                ?: cropToSquare(
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         context.contentResolver.loadThumbnail(fileURI, thumbnailSize, null)
                     } else {
                         // explicitly using deprecated way of generating thumbnails to support API
@@ -118,9 +128,11 @@ sealed class AndroidFile {
                         )
                     }
                 )
+            thumbnail = result
+            return result
+        }
     }
 }
-
 
 // https://stackoverflow.com/a/28783691/2852865
 private fun cropToSquare(bitmap: Bitmap): Bitmap {
