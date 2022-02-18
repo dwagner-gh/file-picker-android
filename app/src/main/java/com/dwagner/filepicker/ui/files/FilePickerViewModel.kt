@@ -1,12 +1,10 @@
-package com.dwagner.filepicker.ui
+package com.dwagner.filepicker.ui.files
 
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dwagner.filepicker.FilterMode
 import com.dwagner.filepicker.io.AndroidFile
 import com.dwagner.filepicker.io.FileRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -21,7 +19,11 @@ class FilePickerViewModel(
     private val context: Application
 ) : ViewModel() {
 
-    private var _states : MutableStateFlow<FPViewState> = MutableStateFlow(FPViewState.FilesLoaded(listOf()))
+    private var _states : MutableStateFlow<FPViewState> = MutableStateFlow(
+        FPViewState.FilesLoaded(
+            listOf()
+        )
+    )
     private val _selectedFiles : MutableList<AndroidFile> = mutableListOf()
     private var lastState : List<AndroidFile> = listOf()
     private var observers : MutableList<DataLoadedObserver> = mutableListOf()

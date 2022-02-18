@@ -7,7 +7,7 @@
     app:startDestination="@id/filePickerFragment">
     <fragment
         android:id="@+id/filePickerFragment"
-        android:name="com.dwagner.filepicker.ui.FilePickerFragment"
+        android:name="com.dwagner.filepicker.ui.files.FilePickerFragment"
         android:label="@string/app_name" />
     <fragment
         android:id="@+id/aboutFragment"

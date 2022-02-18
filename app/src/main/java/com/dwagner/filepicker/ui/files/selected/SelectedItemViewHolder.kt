@@ -1,4 +1,4 @@
-package com.dwagner.filepicker.ui.selected
+package com.dwagner.filepicker.ui.files.selected
 
 import android.view.View
 import androidx.lifecycle.ViewModel
@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.dwagner.filepicker.databinding.SelectedItemBinding
 import com.dwagner.filepicker.io.AndroidFile
-import com.dwagner.filepicker.ui.SelectionHandler
+import com.dwagner.filepicker.ui.files.SelectionHandler
 import kotlinx.coroutines.launch
 
 class SelectedItemViewHolder(

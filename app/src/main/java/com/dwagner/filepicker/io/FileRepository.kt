@@ -5,7 +5,7 @@ import android.content.Context
 import android.provider.MediaStore
 import android.util.Log
 import com.dwagner.filepicker.AppConstants
-import com.dwagner.filepicker.FilterMode
+import com.dwagner.filepicker.ui.files.FilterMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

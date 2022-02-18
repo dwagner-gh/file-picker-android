@@ -1,4 +1,4 @@
-package com.dwagner.filepicker.ui.selected
+package com.dwagner.filepicker.ui.files.selected
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -7,7 +7,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import com.dwagner.filepicker.databinding.SelectedItemBinding
 import com.dwagner.filepicker.io.AndroidFile
-import com.dwagner.filepicker.ui.SelectionHandler
+import com.dwagner.filepicker.ui.files.SelectionHandler
 
 class SelectedItemAdapter(
     private val inflater: LayoutInflater,

@@ -1,4 +1,4 @@
-package com.dwagner.filepicker.ui
+package com.dwagner.filepicker.ui.files
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -8,13 +8,11 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.dwagner.filepicker.FilterMode
 import com.dwagner.filepicker.R
 import com.dwagner.filepicker.databinding.FilePickerBinding
 import com.dwagner.filepicker.io.AndroidFile
-import com.dwagner.filepicker.ui.selected.SelectedItemAdapter
+import com.dwagner.filepicker.ui.files.selected.SelectedItemAdapter
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 

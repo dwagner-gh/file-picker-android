@@ -1,4 +1,4 @@
-package com.dwagner.filepicker.ui
+package com.dwagner.filepicker.ui.files
 
 import com.dwagner.filepicker.io.AndroidFile
 
