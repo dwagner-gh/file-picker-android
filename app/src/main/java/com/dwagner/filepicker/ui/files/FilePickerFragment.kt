@@ -72,20 +72,13 @@ class FilePickerFragment : Fragment(), SelectionHandler, DataLoadedObserver {
 
     private fun permissionGranted() {
         fileItemAdapter = FileItemAdapter(layoutInflater, fpViewModel, this)
-
         selectedAdapter = SelectedItemAdapter(layoutInflater, fpViewModel, this)
 
-        if (fpViewModel.lastLoadedFiles().isNotEmpty()) {
-            // load data of view model if data is present
-            fileItemAdapter.submitList(fpViewModel.lastLoadedFiles().map { it to fpViewModel.getSelectedFiles().contains(it) })
-        }
-
-        else {
+        if(fpViewModel.lastLoadedFiles().isEmpty()) {
             // get all files, because no files are loaded from previous runs
             fpViewModel.getFiles(FilterMode.ALL)
         }
 
-        // update selection ui to represent selected items of view model
         this.updateUI()
 
         // setting up RecyclerViews
@@ -156,8 +149,10 @@ class FilePickerFragment : Fragment(), SelectionHandler, DataLoadedObserver {
         updateUI()
     }
 
+    // recycler views get new data from view model
     private fun updateUI() {
         selectedAdapter.submitList(fpViewModel.getSelectedFiles().toList())
+
         if (fpViewModel.getSelectedFiles().isEmpty()) {
             // handle updating if no files selected
             binding?.selectedView?.visibility = View.GONE

@@ -8,28 +8,16 @@ import com.dwagner.filepicker.io.FileRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-sealed class FPViewState {
-    abstract val files : List<AndroidFile>
-
-    data class FilesLoaded(override val files: List<AndroidFile>) : FPViewState() {}
-}
-
 class FilePickerViewModel(
     private val fpRepository: FileRepository,
     private val context: Application
 ) : ViewModel() {
 
-    private var _states : MutableStateFlow<FPViewState> = MutableStateFlow(
-        FPViewState.FilesLoaded(
-            listOf()
-        )
-    )
     private val _selectedFiles : MutableList<AndroidFile> = mutableListOf()
     private var lastState : List<AndroidFile> = listOf()
     private var observers : MutableList<DataLoadedObserver> = mutableListOf()
     var lastFilterMode : FilterMode = FilterMode.ALL
         private set
-    val states = _states.asStateFlow()
 
     init {
         // forwarding new states of repository to view model list
