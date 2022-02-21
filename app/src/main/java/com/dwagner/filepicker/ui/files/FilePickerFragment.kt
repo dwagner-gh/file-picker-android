@@ -136,6 +136,7 @@ class FilePickerFragment : Fragment(), SelectionObserver, DataLoadedObserver {
     override fun onDestroyView() {
         binding = null
         fpViewModel.stopObservingLoadedData(this)
+        fpViewModel.stopObservingSelectedFiles(this)
         this.fileItemAdapter.onDestroy()
         this.selectedAdapter.onDestroy()
         super.onDestroyView()
