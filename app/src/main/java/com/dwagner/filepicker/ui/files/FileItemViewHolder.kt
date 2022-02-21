@@ -1,7 +1,6 @@
 package com.dwagner.filepicker.ui.files
 
 import android.view.View
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import com.dwagner.filepicker.databinding.FileItemBinding
@@ -11,17 +10,15 @@ import kotlinx.coroutines.launch
 
 class FileItemViewHolder(
     private val binding: FileItemBinding,
-    private val viewModel : ViewModel,
-    private val selectionHandler: SelectionHandler
+    private val viewModel : FilePickerViewModel,
 ) : RecyclerView.ViewHolder(binding.root) {
 
-    fun bind(item: Pair<AndroidFile, Boolean>) {
-        val (file,isSelected) = item
-
+    fun bind(file: AndroidFile) {
         binding.apply {
+            val isSelected = viewModel.isFileSelected(file)
             root.setOnClickListener {
-                // isSelected is the current value, have to invert it
-                selectionHandler.onSelection(file, !isSelected)
+                // have to invert current selected status
+                viewModel.setFileSelected(file, !isSelected)
             }
 
             check.visibility = if (isSelected) View.VISIBLE else View.INVISIBLE
@@ -42,5 +39,4 @@ class FileItemViewHolder(
             }
         }
     }
-
 }

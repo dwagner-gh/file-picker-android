@@ -13,9 +13,10 @@ class FilePickerViewModel(
     private val context: Application
 ) : ViewModel() {
 
-    private val _selectedFiles : MutableList<AndroidFile> = mutableListOf()
+    private val _selectedFiles : MutableMap<AndroidFile, Boolean> = mutableMapOf()
     private var lastState : List<AndroidFile> = listOf()
-    private var observers : MutableList<DataLoadedObserver> = mutableListOf()
+    private var observersData : MutableList<DataLoadedObserver> = mutableListOf()
+    private var observersSelected : MutableList<SelectionObserver> = mutableListOf()
     var lastFilterMode : FilterMode = FilterMode.ALL
         private set
 
@@ -26,7 +27,7 @@ class FilePickerViewModel(
                 lastState = files
 
                 // notify observers (usually fragments) that data was loaded
-                for (observer in observers) {
+                for (observer in observersData) {
                     observer.onDataLoaded()
                 }
             }
@@ -41,37 +42,49 @@ class FilePickerViewModel(
     }
 
     fun setFileSelected(file: AndroidFile, isSelected: Boolean) {
-        // toList() called in order to create a new list, otherwise collection isn't triggered
-        // because it's the same list object
-        if (isSelected) {
-            _selectedFiles.add(file)
-        }
-        else {
-            _selectedFiles.remove(file)
-        }
-
+        _selectedFiles[file] = isSelected
+        observersSelected.forEach { observer -> observer.onSelection(file, isSelected) }
     }
-    
+
+    fun isFileSelected(file: AndroidFile) : Boolean {
+        return _selectedFiles[file] ?: false
+    }
+
     fun deselectAll() {
-        _selectedFiles.removeAll{ true }
+        val copy = _selectedFiles.map { it.key }
+        _selectedFiles.clear()
+        observersSelected.forEach { observer -> observer.onDeselectAll(copy) }
     }
     
     fun getSelectedFiles(): List<AndroidFile> {
-        return _selectedFiles
+        return _selectedFiles.keys.toList().filter { _selectedFiles[it] ?: false }
     }
 
     // retain last loaded files, so view can access data after configuration change
     fun lastLoadedFiles(): List<AndroidFile> = lastState
 
     fun observeLoadedData(observer: DataLoadedObserver) {
-        observers.add(observer)
+        observersData.add(observer)
     }
 
-    fun stopObserving(observer: DataLoadedObserver) {
-        observers.remove(observer)
+    fun stopObservingLoadedData(observer: DataLoadedObserver) {
+        observersData.remove(observer)
+    }
+    
+    fun observeSelectedFiles(observer: SelectionObserver) {
+        observersSelected.add(observer)
+    }
+    
+    fun stopObservingSelectedFiles(observer: SelectionObserver) {
+        observersSelected.remove(observer)
     }
 }
 
 interface DataLoadedObserver {
-    fun onDataLoaded() : Unit
+    fun onDataLoaded()
+}
+
+interface SelectionObserver {
+    fun onSelection(file: AndroidFile, isSelected: Boolean)
+    fun onDeselectAll(selected: List<AndroidFile>)
 }

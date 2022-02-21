@@ -16,7 +16,7 @@ import com.dwagner.filepicker.ui.files.selected.SelectedItemAdapter
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 
-class FilePickerFragment : Fragment(), SelectionHandler, DataLoadedObserver {
+class FilePickerFragment : Fragment(), SelectionObserver, DataLoadedObserver {
 
     private var binding: FilePickerBinding? = null
     private val fpViewModel: FilePickerViewModel by viewModel()
@@ -71,15 +71,21 @@ class FilePickerFragment : Fragment(), SelectionHandler, DataLoadedObserver {
     }
 
     private fun permissionGranted() {
-        fileItemAdapter = FileItemAdapter(layoutInflater, fpViewModel, this)
-        selectedAdapter = SelectedItemAdapter(layoutInflater, fpViewModel, this)
+        fileItemAdapter = FileItemAdapter(layoutInflater, fpViewModel)
+        selectedAdapter = SelectedItemAdapter(layoutInflater, fpViewModel)
 
         if(fpViewModel.lastLoadedFiles().isEmpty()) {
             // get all files, because no files are loaded from previous runs
             fpViewModel.getFiles(FilterMode.ALL)
         }
 
-        this.updateUI()
+        else {
+            fileItemAdapter.submitList(fpViewModel.lastLoadedFiles())
+        }
+
+        fpViewModel.observeSelectedFiles(this)
+        fpViewModel.observeLoadedData(this)
+        this.updateSelectedUI()
 
         // setting up RecyclerViews
         binding?.items?.adapter = fileItemAdapter
@@ -88,15 +94,13 @@ class FilePickerFragment : Fragment(), SelectionHandler, DataLoadedObserver {
             LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         binding?.selectedItems?.layoutManager = layoutManager
 
-        fpViewModel.observeLoadedData(this)
-
-        binding?.deselectAll?.setOnClickListener { this.deselectAll() }
+        binding?.deselectAll?.setOnClickListener { fpViewModel.deselectAll() }
         binding?.acceptChoice?.setOnClickListener {
             // show URIs of all selected files in a dialog
             val fileURIs =
                 fpViewModel.getSelectedFiles().map { it.fileURI.toString() }.toTypedArray()
             ShowURIsDialogFragment(fileURIs).show(childFragmentManager, ShowURIsDialogFragment.TAG)
-            this.deselectAll()
+            this.fpViewModel.deselectAll()
         }
     }
 
@@ -131,39 +135,33 @@ class FilePickerFragment : Fragment(), SelectionHandler, DataLoadedObserver {
 
     override fun onDestroyView() {
         binding = null
-        fpViewModel.stopObserving(this)
+        fpViewModel.stopObservingLoadedData(this)
+        this.fileItemAdapter.onDestroy()
+        this.selectedAdapter.onDestroy()
         super.onDestroyView()
     }
 
     override fun onDataLoaded() {
-        updateUI()
+        updateSelectedUI()
     }
 
     override fun onSelection(file: AndroidFile, isSelected: Boolean) {
-        fpViewModel.setFileSelected(file, isSelected)
-        updateUI()
+        updateSelectedUI()
     }
 
-    private fun deselectAll() {
-        fpViewModel.deselectAll()
-        updateUI()
+    override fun onDeselectAll(selected: List<AndroidFile>) {
+        // ignore list of previously selected files, already handled by adapters
+        updateSelectedUI()
     }
 
     // recycler views get new data from view model
-    private fun updateUI() {
-        selectedAdapter.submitList(fpViewModel.getSelectedFiles().toList())
-
+    private fun updateSelectedUI() {
         if (fpViewModel.getSelectedFiles().isEmpty()) {
             // handle updating if no files selected
             binding?.selectedView?.visibility = View.GONE
-            fileItemAdapter.submitList(fpViewModel.lastLoadedFiles().map { it to false })
 
         } else {
             // handling updating if files are selected
-            fileItemAdapter.submitList(
-                fpViewModel.lastLoadedFiles()
-                    .map { it to fpViewModel.getSelectedFiles().contains(it)})
-
             binding?.selectedView?.visibility = View.VISIBLE
             binding?.selectedText?.text =
                 String.format(getString(R.string.selected_text), fpViewModel.getSelectedFiles().size)
