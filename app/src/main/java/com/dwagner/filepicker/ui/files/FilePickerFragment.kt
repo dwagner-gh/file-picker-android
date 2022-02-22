@@ -8,19 +8,19 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.dwagner.filepicker.R
 import com.dwagner.filepicker.databinding.FilePickerBinding
-import com.dwagner.filepicker.io.AndroidFile
 import com.dwagner.filepicker.ui.files.selected.SelectedItemAdapter
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 
-class FilePickerFragment : Fragment(), SelectionObserver, DataLoadedObserver {
+class FilePickerFragment : Fragment(), ViewStateChangeObserver {
 
     private var binding: FilePickerBinding? = null
     private val fpViewModel: FilePickerViewModel by viewModel()
-    private lateinit var selectedAdapter : SelectedItemAdapter
+    private lateinit var selectedItemAdapter: SelectedItemAdapter
     private lateinit var fileItemAdapter: FileItemAdapter
 
     // Register the permissions callback, which handles the user's response to the
@@ -71,25 +71,29 @@ class FilePickerFragment : Fragment(), SelectionObserver, DataLoadedObserver {
     }
 
     private fun permissionGranted() {
-        fileItemAdapter = FileItemAdapter(layoutInflater, fpViewModel)
-        selectedAdapter = SelectedItemAdapter(layoutInflater, fpViewModel)
+        fileItemAdapter = FileItemAdapter(
+            layoutInflater,
+            fpViewModel.viewModelScope
+        ) { file, isSelected -> fpViewModel.setFileSelected(file, isSelected) }
 
-        if(fpViewModel.lastLoadedFiles().isEmpty()) {
-            // get all files, because no files are loaded from previous runs
-            fpViewModel.getFiles(FilterMode.ALL)
-        }
 
-        else {
-            fileItemAdapter.submitList(fpViewModel.lastLoadedFiles())
-        }
+        selectedItemAdapter = SelectedItemAdapter(
+            layoutInflater,
+            fpViewModel.viewModelScope
+            // always want to deselect when a file is selected
+        ) { file -> fpViewModel.setFileSelected(file, false) }
 
-        fpViewModel.observeSelectedFiles(this)
-        fpViewModel.observeLoadedData(this)
-        this.updateSelectedUI()
+
+        fpViewModel.observeViewStateChange(fileItemAdapter)
+        fpViewModel.observeViewStateChange(selectedItemAdapter)
+        fpViewModel.observeViewStateChange(this)
+
+        // emits current state (last loaded data and selected files)
+        fpViewModel.init()
 
         // setting up RecyclerViews
         binding?.items?.adapter = fileItemAdapter
-        binding?.selectedItems?.adapter = selectedAdapter
+        binding?.selectedItems?.adapter = selectedItemAdapter
         val layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         binding?.selectedItems?.layoutManager = layoutManager
@@ -135,28 +139,16 @@ class FilePickerFragment : Fragment(), SelectionObserver, DataLoadedObserver {
 
     override fun onDestroyView() {
         binding = null
-        fpViewModel.stopObservingLoadedData(this)
-        fpViewModel.stopObservingSelectedFiles(this)
-        this.fileItemAdapter.onDestroy()
-        this.selectedAdapter.onDestroy()
+        fpViewModel.stopObservingViewStateChange(this)
+        fpViewModel.stopObservingViewStateChange(fileItemAdapter)
+        fpViewModel.stopObservingViewStateChange(selectedItemAdapter)
+
         super.onDestroyView()
     }
 
-    override fun onDataLoaded() {
-        updateSelectedUI()
-    }
-
-    override fun onSelection(file: AndroidFile, isSelected: Boolean) {
-        updateSelectedUI()
-    }
-
-    override fun onDeselectAll(selected: List<AndroidFile>) {
-        // ignore list of previously selected files, already handled by adapters
-        updateSelectedUI()
-    }
-
-    // recycler views get new data from view model
-    private fun updateSelectedUI() {
+    override fun onStateChange(stateChange: ViewStateChange) {
+        // type of view state change doesn't matter, we only need to determine
+        // whether or not the overview of selected files needs to be shown or hidden
         if (fpViewModel.getSelectedFiles().isEmpty()) {
             // handle updating if no files selected
             binding?.selectedView?.visibility = View.GONE
@@ -165,7 +157,10 @@ class FilePickerFragment : Fragment(), SelectionObserver, DataLoadedObserver {
             // handling updating if files are selected
             binding?.selectedView?.visibility = View.VISIBLE
             binding?.selectedText?.text =
-                String.format(getString(R.string.selected_text), fpViewModel.getSelectedFiles().size)
+                String.format(
+                    getString(R.string.selected_text),
+                    fpViewModel.getSelectedFiles().size
+                )
         }
     }
 }

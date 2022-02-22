@@ -14,9 +14,9 @@ class FilePickerViewModel(
 ) : ViewModel() {
 
     private val _selectedFiles : MutableMap<AndroidFile, Boolean> = mutableMapOf()
-    private var lastState : List<AndroidFile> = listOf()
-    private var observersData : MutableList<DataLoadedObserver> = mutableListOf()
-    private var observersSelected : MutableList<SelectionObserver> = mutableListOf()
+    private var lastLoadedFiles : List<AndroidFile> = listOf()
+    // using set to avoid calling the same observer twice
+    private var viewStateObservers : MutableSet<ViewStateChangeObserver> = mutableSetOf()
     var lastFilterMode : FilterMode = FilterMode.ALL
         private set
 
@@ -24,12 +24,10 @@ class FilePickerViewModel(
         // forwarding new states of repository to view model list
         viewModelScope.launch {
             fpRepository.resultURIs.collect { files: List<AndroidFile> ->
-                lastState = files
+                lastLoadedFiles = files
 
                 // notify observers (usually fragments) that data was loaded
-                for (observer in observersData) {
-                    observer.onDataLoaded()
-                }
+                viewStateObservers.forEach { it.onStateChange(ViewStateChange.DataLoaded(files)) }
             }
         }
     }
@@ -42,8 +40,17 @@ class FilePickerViewModel(
     }
 
     fun setFileSelected(file: AndroidFile, isSelected: Boolean) {
-        _selectedFiles[file] = isSelected
-        observersSelected.forEach { observer -> observer.onSelection(file, isSelected) }
+        if (isSelected) {
+            _selectedFiles[file] = true
+        }
+        else {
+            _selectedFiles.remove(file)
+        }
+        viewModelScope.launch {
+            viewStateObservers.forEach {
+                it.onStateChange(ViewStateChange.SelectFile(file, isSelected))
+            }
+        }
     }
 
     fun isFileSelected(file: AndroidFile) : Boolean {
@@ -51,40 +58,44 @@ class FilePickerViewModel(
     }
 
     fun deselectAll() {
-        val copy = _selectedFiles.map { it.key }
+        val copy = _selectedFiles.toMap()
         _selectedFiles.clear()
-        observersSelected.forEach { observer -> observer.onDeselectAll(copy) }
+        viewModelScope.launch {
+            viewStateObservers.forEach {
+                // map all selected files to false, meaning they are no longer selected
+                it.onStateChange(ViewStateChange.SelectFiles(copy.mapValues { false }))
+            }
+        }
     }
-    
+
     fun getSelectedFiles(): List<AndroidFile> {
-        return _selectedFiles.keys.toList().filter { _selectedFiles[it] ?: false }
-    }
-
-    // retain last loaded files, so view can access data after configuration change
-    fun lastLoadedFiles(): List<AndroidFile> = lastState
-
-    fun observeLoadedData(observer: DataLoadedObserver) {
-        observersData.add(observer)
-    }
-
-    fun stopObservingLoadedData(observer: DataLoadedObserver) {
-        observersData.remove(observer)
+        return _selectedFiles.keys.toList()
     }
     
-    fun observeSelectedFiles(observer: SelectionObserver) {
-        observersSelected.add(observer)
+    fun observeViewStateChange(observer: ViewStateChangeObserver) {
+        viewStateObservers.add(observer)
     }
     
-    fun stopObservingSelectedFiles(observer: SelectionObserver) {
-        observersSelected.remove(observer)
+    fun stopObservingViewStateChange(observer: ViewStateChangeObserver) {
+        viewStateObservers.remove(observer)
+    }
+
+    /**
+     * Initializes the view model and it's observers. Either loads new files,
+     * or emits the last loaded and selected files.
+     **/
+    fun init() {
+        if (lastLoadedFiles.isEmpty()) {
+            getFiles(lastFilterMode)
+        }
+
+        else {
+            val lastLoadedCopy = lastLoadedFiles.toList()
+            viewStateObservers.forEach { it.onStateChange(ViewStateChange.DataLoaded(lastLoadedCopy)) }
+        }
+
+        val selectedFilesCopy = _selectedFiles.toMap()
+        viewStateObservers.forEach { it.onStateChange(ViewStateChange.SelectFiles(selectedFilesCopy)) }
     }
 }
 
-interface DataLoadedObserver {
-    fun onDataLoaded()
-}
-
-interface SelectionObserver {
-    fun onSelection(file: AndroidFile, isSelected: Boolean)
-    fun onDeselectAll(selected: List<AndroidFile>)
-}

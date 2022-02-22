@@ -6,24 +6,23 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import com.dwagner.filepicker.databinding.SelectedItemBinding
 import com.dwagner.filepicker.io.AndroidFile
-import com.dwagner.filepicker.ui.files.FilePickerViewModel
-import com.dwagner.filepicker.ui.files.SelectionObserver
+import com.dwagner.filepicker.ui.files.ViewStateChange
+import com.dwagner.filepicker.ui.files.ViewStateChangeObserver
+import kotlinx.coroutines.CoroutineScope
+
+typealias DeselectCallback = (AndroidFile) -> Unit
 
 class SelectedItemAdapter(
     private val inflater: LayoutInflater,
-    private val viewModel: FilePickerViewModel
-) : ListAdapter<AndroidFile, SelectedItemViewHolder>(DiffCallbackSelectedFiles), SelectionObserver {
+    private val coroutineScope: CoroutineScope,
+    private val deselectCallback: DeselectCallback
+) : ListAdapter<AndroidFile, SelectedItemViewHolder>(DiffCallbackSelectedFiles), ViewStateChangeObserver {
 
     // adapter has own internal state, but it reflects the changes to the view model
-    private val selectedItems : MutableList<AndroidFile>
-
-    init {
-        viewModel.observeSelectedFiles(this)
-        selectedItems = viewModel.getSelectedFiles().toMutableList()
-    }
+    private val selectedItems : MutableList<AndroidFile> = mutableListOf()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SelectedItemViewHolder = SelectedItemViewHolder(
-        SelectedItemBinding.inflate(inflater, parent, false), viewModel)
+        SelectedItemBinding.inflate(inflater, parent, false), coroutineScope, deselectCallback)
 
     override fun onBindViewHolder(holder: SelectedItemViewHolder, position: Int) {
         holder.bind(selectedItems[position])
@@ -33,7 +32,15 @@ class SelectedItemAdapter(
         return selectedItems.size
     }
 
-    override fun onSelection(file: AndroidFile, isSelected: Boolean) {
+    override fun onStateChange(stateChange: ViewStateChange) {
+        when(stateChange) {
+            is ViewStateChange.SelectFile -> onSelection(stateChange.file, stateChange.isSelected)
+            is ViewStateChange.SelectFiles -> onSelectFiles(stateChange.files)
+            else -> { /* No other changes need to be handled */ }
+        }
+    }
+
+    private fun onSelection(file: AndroidFile, isSelected: Boolean) {
         if (!isSelected) {
             // deselection
             val index = this.selectedItems.indexOf(file)
@@ -44,19 +51,25 @@ class SelectedItemAdapter(
         else {
             // new item selected
             this.selectedItems.add(file)
-            this.notifyItemInserted(selectedItems.size)
+            this.notifyItemInserted(selectedItems.size - 1)
         }
     }
 
-    override fun onDeselectAll(selected: List<AndroidFile>) {
-        // just clear internal list, ignore the passed list
-        val oldSize = selectedItems.size
-        selectedItems.clear()
-        this.notifyItemRangeRemoved(0, oldSize)
-    }
-
-    fun onDestroy() {
-        viewModel.stopObservingSelectedFiles(this)
+    private fun onSelectFiles(files: Map<AndroidFile, Boolean>) {
+        files.forEach {
+            val (file, isSelected) = it
+            if (isSelected) {
+                // add file
+                selectedItems.add(file)
+                notifyItemInserted(selectedItems.size - 1)
+            }
+            else {
+                // remove file
+                val index = selectedItems.indexOf(file)
+                selectedItems.removeAt(index)
+                notifyItemRemoved(index)
+            }
+        }
     }
 }
 
