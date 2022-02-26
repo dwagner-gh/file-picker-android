@@ -13,4 +13,7 @@
     <string name="chosen_uris">Ausgewählte URIs</string>
     <string name="about_html">about-de.html</string>
     <string name="about_title">Über Diese App</string>
+    <string name="select_media_files">Mediendateien Auswählen</string>
+    <string name="title_selected_files">File Picker (ausgewählte Dateien)</string>
+    <string name="choose_files">Dateien Auswählen</string>
 </resources>

@@ -1,6 +1,9 @@
 package com.dwagner.filepicker.ui.files
 
 import android.Manifest
+import android.app.Activity
+import android.content.ClipData
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.*
@@ -100,10 +103,30 @@ class FilePickerFragment : Fragment(), ViewStateChangeObserver {
 
         binding?.deselectAll?.setOnClickListener { fpViewModel.deselectAll() }
         binding?.acceptChoice?.setOnClickListener {
-            // show URIs of all selected files in a dialog
-            val fileURIs =
-                fpViewModel.getSelectedFiles().map { it.fileURI.toString() }.toTypedArray()
-            ShowURIsDialogFragment(fileURIs).show(childFragmentManager, ShowURIsDialogFragment.TAG)
+            val selectedFiles = fpViewModel.getSelectedFiles()
+
+            if (requireActivity().intent.action == Intent.ACTION_GET_CONTENT ||
+                requireActivity().intent.action == Intent.ACTION_PICK) {
+                // return intent result
+                if(selectedFiles.isNotEmpty()) {
+                    val resultIntent = Intent(requireActivity().intent.action)
+                    val clipData = ClipData.newUri(requireActivity().contentResolver, "", selectedFiles[0].fileURI)
+
+                    for (i in 1 until selectedFiles.size) {
+                        clipData.addItem(ClipData.Item(selectedFiles[i].fileURI))
+                    }
+
+                    resultIntent.clipData = clipData
+                    requireActivity().setResult(Activity.RESULT_OK, resultIntent)
+                    requireActivity().finish()
+                }
+            }
+
+            else {
+                // don't return intent result, show uris in a dialog
+                ShowURIsDialogFragment(selectedFiles.map { it.fileURI.toString() }.toTypedArray()).show(childFragmentManager, ShowURIsDialogFragment.TAG)
+            }
+
             this.fpViewModel.deselectAll()
         }
     }

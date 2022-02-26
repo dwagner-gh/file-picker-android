@@ -12,4 +12,7 @@
     <string name="chosen_uris">Chosen URIs</string>
     <string name="about_html">about.html</string>
     <string name="about_title">About This App</string>
+    <string name="select_media_files">Select Media Files</string>
+    <string name="title_selected_files">File Picker (selected files)</string>
+    <string name="choose_files">Choose Files</string>
 </resources>
