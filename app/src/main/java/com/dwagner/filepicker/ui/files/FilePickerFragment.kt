@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.*
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -86,13 +87,28 @@ class FilePickerFragment : Fragment(), ViewStateChangeObserver {
             // always want to deselect when a file is selected
         ) { file -> fpViewModel.setFileSelected(file, false) }
 
-
         fpViewModel.observeViewStateChange(fileItemAdapter)
         fpViewModel.observeViewStateChange(selectedItemAdapter)
         fpViewModel.observeViewStateChange(this)
 
-        // emits current state (last loaded data and selected files)
-        fpViewModel.init()
+        // determines if fragment needs to return file uris to an activity, and if so, if only
+        // a subset of files are allowed (videos, images..)
+        val intent = requireActivity().intent
+        if(intent.action == Intent.ACTION_PICK || intent.action == Intent.ACTION_GET_CONTENT) {
+            // another activity wants file URIs as result
+            when {
+                // only image URIs should be returned
+                intent.type?.startsWith("image") == true -> fpViewModel.init(FilterMode.PHOTO)
+                // only video URIs should be returned
+                intent.type?.startsWith("video") == true -> fpViewModel.init(FilterMode.VIDEO)
+                else -> fpViewModel.init(fpViewModel.lastFilterMode ?: FilterMode.ALL)
+            }
+        }
+
+        else {
+            fpViewModel.init(fpViewModel.lastFilterMode ?: FilterMode.ALL)
+        }
+
 
         // setting up RecyclerViews
         binding?.items?.adapter = fileItemAdapter
@@ -132,28 +148,42 @@ class FilePickerFragment : Fragment(), ViewStateChangeObserver {
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+
+        val intent = requireActivity().intent
+        // when activity was started with the intention of retrieving file uris, and file selection
+        // was limited to videos or photos, the filter menu is hidden
+        val showMenu =
+            !((intent.action == Intent.ACTION_PICK || intent.action == Intent.ACTION_GET_CONTENT)
+                    && intent.type != "*/*") // mime type != */* means either image/* or video/*
+
+        if (!showMenu) {
+            return
+        }
+        // menu should be shown
         inflater.inflate(R.menu.actions_picker, menu)
         when (fpViewModel.lastFilterMode) {
             FilterMode.ALL -> menu.findItem(R.id.all).isChecked = true
             FilterMode.VIDEO -> menu.findItem(R.id.video).isChecked = true
             FilterMode.PHOTO -> menu.findItem(R.id.photo).isChecked = true
+            null -> menu.findItem(R.id.all).isChecked = true
         }
+
         super.onCreateOptionsMenu(menu, inflater)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.all -> {
-            fpViewModel.getFiles(FilterMode.ALL)
+            fpViewModel.loadFiles(FilterMode.ALL)
             item.isChecked = true
             true
         }
         R.id.photo -> {
-            fpViewModel.getFiles(FilterMode.PHOTO)
+            fpViewModel.loadFiles(FilterMode.PHOTO)
             item.isChecked = true
             true
         }
         R.id.video -> {
-            fpViewModel.getFiles(FilterMode.VIDEO)
+            fpViewModel.loadFiles(FilterMode.VIDEO)
             item.isChecked = true
             true
         }
@@ -170,20 +200,18 @@ class FilePickerFragment : Fragment(), ViewStateChangeObserver {
     }
 
     override fun onStateChange(stateChange: ViewStateChange) {
-        // type of view state change doesn't matter, we only need to determine
-        // whether or not the overview of selected files needs to be shown or hidden
-        if (fpViewModel.getSelectedFiles().isEmpty()) {
-            // handle updating if no files selected
-            binding?.selectedView?.visibility = View.GONE
-
-        } else {
-            // handling updating if files are selected
-            binding?.selectedView?.visibility = View.VISIBLE
+        val updateSelectedView = {
+            binding?.selectedView?.visibility = if (fpViewModel.getSelectedFiles().isEmpty()) View.GONE else View.VISIBLE
             binding?.selectedText?.text =
                 String.format(
                     getString(R.string.selected_text),
                     fpViewModel.getSelectedFiles().size
                 )
+        }
+        when(stateChange) {
+            is ViewStateChange.SelectFiles -> updateSelectedView()
+            is ViewStateChange.SelectFile -> updateSelectedView()
+            else -> {} // do nothing
         }
     }
 }

@@ -33,6 +33,14 @@ class PickerActivity : AppCompatActivity() {
             appBarConfiguration = AppBarConfiguration(nav.graph)
             setupActionBarWithNavController(nav, appBarConfiguration)
         }
+
+        val fileType = when {
+            intent.type?.startsWith("image") == true -> getString(R.string.image_files)
+            intent.type?.startsWith("video") == true -> getString(R.string.video_files)
+            else -> getString(R.string.all_files)
+        }
+
+        binding.toolbar.title = String.format("%s (%s)", getString(R.string.app_name), fileType)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

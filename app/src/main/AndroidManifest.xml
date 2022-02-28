@@ -23,6 +23,8 @@
                 <category android:name="android.intent.category.APP_GALLERY"/>
                 <category android:name="android.intent.category.APP_FILES"/>
                 <data android:mimeType="*/*"/>
+                <data android:mimeType="image/*"/>
+                <data android:mimeType="video/*"/>
             </intent-filter>
         </activity>
 

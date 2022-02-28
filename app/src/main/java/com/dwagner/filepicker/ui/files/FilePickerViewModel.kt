@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dwagner.filepicker.io.AndroidFile
 import com.dwagner.filepicker.io.FileRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -13,37 +14,37 @@ class FilePickerViewModel(
     private val context: Application
 ) : ViewModel() {
 
-    private val _selectedFiles : MutableMap<AndroidFile, Boolean> = mutableMapOf()
-    private var lastLoadedFiles : List<AndroidFile> = listOf()
+    private val _selectedFiles: MutableMap<AndroidFile, Boolean> = mutableMapOf()
+    private var lastLoadedFiles: List<AndroidFile> = listOf()
+
     // using set to avoid calling the same observer twice
-    private var viewStateObservers : MutableSet<ViewStateChangeObserver> = mutableSetOf()
-    var lastFilterMode : FilterMode = FilterMode.ALL
+    private var viewStateObservers: MutableSet<ViewStateChangeObserver> = mutableSetOf()
+    private var job : Job? = null
+    var lastFilterMode: FilterMode? = null
         private set
 
-    init {
-        // forwarding new states of repository to view model list
-        viewModelScope.launch {
+    fun loadFiles(filterMode: FilterMode) {
+        job?.cancel()
+        job = viewModelScope.launch {
             fpRepository.resultURIs.collect { files: List<AndroidFile> ->
-                lastLoadedFiles = files
+                lastLoadedFiles = files.toList()
 
                 // notify observers (usually fragments) that data was loaded
-                viewStateObservers.forEach { it.onStateChange(ViewStateChange.DataLoaded(files)) }
+                viewStateObservers.forEach {
+                    it.onStateChange(ViewStateChange.DataLoaded(files.toList(), filterMode))
+                }
             }
         }
-    }
-
-    fun getFiles(filterMode: FilterMode) {
+        lastFilterMode = filterMode
         viewModelScope.launch {
             fpRepository.getFiles(context, filterMode)
-            lastFilterMode = filterMode
         }
     }
 
     fun setFileSelected(file: AndroidFile, isSelected: Boolean) {
         if (isSelected) {
             _selectedFiles[file] = true
-        }
-        else {
+        } else {
             _selectedFiles.remove(file)
         }
         viewModelScope.launch {
@@ -53,7 +54,7 @@ class FilePickerViewModel(
         }
     }
 
-    fun isFileSelected(file: AndroidFile) : Boolean {
+    fun isFileSelected(file: AndroidFile): Boolean {
         return _selectedFiles[file] ?: false
     }
 
@@ -71,27 +72,29 @@ class FilePickerViewModel(
     fun getSelectedFiles(): List<AndroidFile> {
         return _selectedFiles.keys.toList()
     }
-    
+
     fun observeViewStateChange(observer: ViewStateChangeObserver) {
         viewStateObservers.add(observer)
     }
-    
+
     fun stopObservingViewStateChange(observer: ViewStateChangeObserver) {
         viewStateObservers.remove(observer)
     }
 
     /**
      * Initializes the view model and it's observers. Either loads new files,
-     * or emits the last loaded and selected files.
+     * or emits the last loaded and selected files, if filter mode is the same.
      **/
-    fun init() {
-        if (lastLoadedFiles.isEmpty()) {
-            getFiles(lastFilterMode)
+    fun init(filterMode: FilterMode) {
+        if (lastLoadedFiles.isNotEmpty() && filterMode == lastFilterMode) {
+            val lastLoadedCopy = lastLoadedFiles.toList()
+            viewStateObservers.forEach {
+                it.onStateChange(ViewStateChange.DataLoaded(lastLoadedCopy, filterMode))
+            }
         }
 
         else {
-            val lastLoadedCopy = lastLoadedFiles.toList()
-            viewStateObservers.forEach { it.onStateChange(ViewStateChange.DataLoaded(lastLoadedCopy)) }
+            loadFiles(filterMode)
         }
 
         val selectedFilesCopy = _selectedFiles.toMap()

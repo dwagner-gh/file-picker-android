@@ -2,6 +2,7 @@ package com.dwagner.filepicker.ui.files.selected
 
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
+import com.dwagner.filepicker.clickWithDebounce
 import com.dwagner.filepicker.databinding.SelectedItemBinding
 import com.dwagner.filepicker.io.AndroidFile
 import kotlinx.coroutines.CoroutineScope
@@ -16,8 +17,12 @@ class SelectedItemViewHolder(
     fun bind(file: AndroidFile) {
         binding.apply {
             root.setOnClickListener {
+                // disable view to prevent double clicking, element gets removed after click
+                it.isEnabled = false
                 deselectCallback(file)
             }
+
+            root.isEnabled = true
 
             coroutineScope.launch {
                 thumbnailSelected.setImageBitmap(file.loadThumbnail())

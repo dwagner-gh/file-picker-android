@@ -44,8 +44,11 @@ class SelectedItemAdapter(
         if (!isSelected) {
             // deselection
             val index = this.selectedItems.indexOf(file)
-            this.selectedItems.removeAt(index)
-            this.notifyItemRemoved(index)
+            if (index >= 0) {
+                // selected item is in list
+                this.selectedItems.removeAt(index)
+                this.notifyItemRemoved(index)
+            }
         }
 
         else {

@@ -23,10 +23,16 @@ class MainActivity : AppCompatActivity() {
 
         val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, selectedPaths)
         binding.uris.adapter = adapter
-        binding.toolbar.title = getString(R.string.title_selected_files)
+        binding.toolbar.title = String.format(
+            "%s (%s)",
+            getString(R.string.app_name),
+            getString(R.string.title_selected_files)
+        )
         binding.selectedFilesText.text = String.format(getString(R.string.selected_text), 0)
 
-        val selectImagesActivityResult =
+        // idea from:
+        // https://github.com/velmurugan-murugesan/Android-Example/blob/3c9e2966c1addff89e70168cfcabe737cc691761/CaptureAndPickImageAndroid/app/src/main/java/com/example/captureandpickimageandroid/MainActivity.kt
+        val selectFilesActivityResult =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
                     val data: Intent? = result.data
@@ -68,7 +74,23 @@ class MainActivity : AppCompatActivity() {
             // other categories work as well, but usually open system file picker
             // and from there the file picker app can be selected
             intent.addCategory(Intent.CATEGORY_APP_GALLERY)
-            selectImagesActivityResult.launch(Intent.createChooser(intent, getString(R.string.choose_files)))
+            selectFilesActivityResult.launch(Intent.createChooser(intent, getString(R.string.choose_files)))
+        }
+
+        binding.selectImages.setOnClickListener {
+            val intent = Intent(Intent.ACTION_GET_CONTENT)
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            intent.type = "image/*"
+            intent.addCategory(Intent.CATEGORY_APP_GALLERY)
+            selectFilesActivityResult.launch(Intent.createChooser(intent, getString(R.string.choose_files)))
+        }
+
+        binding.selectVideos.setOnClickListener {
+            val intent = Intent(Intent.ACTION_GET_CONTENT)
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            intent.type = "video/*"
+            intent.addCategory(Intent.CATEGORY_APP_GALLERY)
+            selectFilesActivityResult.launch(Intent.createChooser(intent, getString(R.string.choose_files)))
         }
     }
 
