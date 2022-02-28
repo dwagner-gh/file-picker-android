@@ -7,7 +7,6 @@ import com.dwagner.filepicker.io.AndroidFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-
 class FileItemViewHolder(
     private val binding: FileItemBinding,
     private val coroutineScope: CoroutineScope,
@@ -17,9 +16,15 @@ class FileItemViewHolder(
     fun bind(file: AndroidFile, isSelected: Boolean) {
         binding.apply {
             root.setOnClickListener {
+                // prevent double clicking while click is being processed
+                it.isEnabled = false
                 // have to invert current selected status
                 selectedCallback(file, !isSelected)
             }
+
+            // this is called again after onClick has finished, we can enable view again
+            // enabling and disabling the view prevents double clicking
+            root.isEnabled = true
 
             check.visibility = if (isSelected) View.VISIBLE else View.INVISIBLE
             selectedOverlay.visibility = if (isSelected) View.VISIBLE else View.GONE
